@@ -6,7 +6,7 @@
 
 AlphaFold2's initial training focused on individual protein chains, making it highly proficient in predicting their structures. Subsequently, a variant called [AlphaFold-Multimer](https://doi.org/10.1101/2021.10.04.463034) was developed to address protein-protein complexes. This version can predict structures of both homo-multimers (complexes of identical protein chains) and hetero-multimers (complexes of different protein chains).
 
-ALphaFold-Multimer is available as a different [NIM container on NGC](https://catalog.ngc.nvidia.com/orgs/nim/teams/deepmind/containers/alphafold2-multimer).
+AlphaFold-Multimer is available as a different [NIM container on NGC](https://catalog.ngc.nvidia.com/orgs/nim/teams/deepmind/containers/alphafold2-multimer).
 
 ## Getting started
 
