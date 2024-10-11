@@ -53,68 +53,68 @@ resource "oci_file_storage_export" "oke_export" {
 }
 
 
-# Policy to update FSS performance via the operator host is not yet implemented. This requires IAM policies to be added.
-resource "null_resource" "helm_deployment_via_operator" {
-  count = var.create_operator_and_bastion ? 1 : 0
+# # Policy to update FSS performance via the operator host is not yet implemented. This requires IAM policies to be added.
+# resource "null_resource" "helm_deployment_via_operator" {
+#   count = var.create_operator_and_bastion ? 1 : 0
 
-  triggers = {
-    desired_fss_mt_throughput = local.desired_fss_mt_throughput
-  }
+#   triggers = {
+#     desired_fss_mt_throughput = local.desired_fss_mt_throughput
+#   }
 
-  connection {
-    bastion_host        = module.oke.bastion_public_ip
-    bastion_user        = var.bastion_user
-    bastion_private_key = tls_private_key.stack_key.private_key_openssh
-    host                = module.oke.operator_private_ip
-    user                = var.bastion_user
-    private_key         = tls_private_key.stack_key.private_key_openssh
-    timeout             = "40m"
-    type                = "ssh"
-  }
+#   connection {
+#     bastion_host        = module.oke.bastion_public_ip
+#     bastion_user        = var.bastion_user
+#     bastion_private_key = tls_private_key.stack_key.private_key_openssh
+#     host                = module.oke.operator_private_ip
+#     user                = var.bastion_user
+#     private_key         = tls_private_key.stack_key.private_key_openssh
+#     timeout             = "40m"
+#     type                = "ssh"
+#   }
 
-  provisioner "remote-exec" {
-    inline = ["oci fs mount-target upgrade-shape --mount-target-id  ${oci_file_storage_mount_target.oke_mount_target.id} --requested-throughput ${self.triggers.desired_fss_mt_throughput} | jq"]
-  }
+#   provisioner "remote-exec" {
+#     inline = ["oci fs mount-target upgrade-shape --mount-target-id  ${oci_file_storage_mount_target.oke_mount_target.id} --requested-throughput ${self.triggers.desired_fss_mt_throughput} | jq"]
+#   }
 
-  depends_on = [ time_sleep.wait_60_seconds, oci_file_storage_mount_target.oke_mount_target ]
-}
+#   depends_on = [ time_sleep.wait_60_seconds, oci_file_storage_mount_target.oke_mount_target ]
+# }
 
-resource "time_sleep" "wait_60_seconds" {
-  depends_on = [oci_identity_policy.operator_fss_policy]
+# resource "time_sleep" "wait_60_seconds" {
+#   depends_on = [oci_identity_policy.operator_fss_policy]
 
-  create_duration = "60s"
-}
+#   create_duration = "60s"
+# }
 
-resource "oci_identity_policy" "operator_fss_policy" {
-  count = var.create_cluster != null && var.create_operator_policy_to_manage_cluster && var.create_operator_and_bastion ? 1 : 0
+# resource "oci_identity_policy" "operator_fss_policy" {
+#   count = var.create_cluster != null && var.create_operator_policy_to_manage_cluster && var.create_operator_and_bastion ? 1 : 0
 
-  provider = oci.home
+#   provider = oci.home
 
-  compartment_id = var.compartment_id
-  description    = "Policies for OKE Operator host state ${local.state_id}"
-  name           = "oke-operator-manage-fss-${local.state_id}"
-  statements = [
-    "ALLOW any-user to manage mount-targets in compartment id ${var.compartment_id} where all {request.principal.type = 'instance', request.principal.id = '${module.oke.operator_id}', request.operation = 'UpgradeMountTarget'}"
-  ]
-  defined_tags = var.use_defined_tags ? lookup(var.defined_tags, "iam") : {}
-  freeform_tags = lookup(var.freeform_tags, "iam")
-  lifecycle {
-    ignore_changes = [defined_tags, freeform_tags]
-  }
-}
+#   compartment_id = var.compartment_id
+#   description    = "Policies for OKE Operator host state ${local.state_id}"
+#   name           = "oke-operator-manage-fss-${local.state_id}"
+#   statements = [
+#     "ALLOW any-user to manage mount-targets in compartment id ${var.compartment_id} where all {request.principal.type = 'instance', request.principal.id = '${module.oke.operator_id}', request.operation = 'UpgradeMountTarget'}"
+#   ]
+#   defined_tags = var.use_defined_tags ? lookup(var.defined_tags, "iam") : {}
+#   freeform_tags = lookup(var.freeform_tags, "iam")
+#   lifecycle {
+#     ignore_changes = [defined_tags, freeform_tags]
+#   }
+# }
 
-resource "null_resource" "upgrade_mt_throughput_from_local" {
-  count = alltrue([!var.create_operator_and_bastion, var.control_plane_is_public]) ? 1 : 0
+# resource "null_resource" "upgrade_mt_throughput_from_local" {
+#   count = alltrue([!var.create_operator_and_bastion, var.control_plane_is_public]) ? 1 : 0
 
-  triggers = {
-    desired_fss_mt_throughput = local.desired_fss_mt_throughput
-  }
+#   triggers = {
+#     desired_fss_mt_throughput = local.desired_fss_mt_throughput
+#   }
 
-  provisioner "local-exec" {
-    command     = <<-EOT
-      oci fs mount-target upgrade-shape --mount-target-id  ${oci_file_storage_mount_target.oke_mount_target.id} --requested-throughput ${self.triggers.desired_fss_mt_throughput} | jq
-      EOT
-  }
+#   provisioner "local-exec" {
+#     command     = <<-EOT
+#       oci fs mount-target upgrade-shape --mount-target-id  ${oci_file_storage_mount_target.oke_mount_target.id} --requested-throughput ${self.triggers.desired_fss_mt_throughput} | jq
+#       EOT
+#   }
 
-  depends_on = [ oci_file_storage_mount_target.oke_mount_target ]
-}
+#   depends_on = [ oci_file_storage_mount_target.oke_mount_target ]
+# }
